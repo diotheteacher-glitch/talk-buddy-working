@@ -198,162 +198,93 @@
   </div>
 
   <script>
-    const PROXY_URL = "https://talkbuddy-proxy.vercel.app/api/talkbuddy";
-    const selections = {};
-    const requiredCategories = [
-      'gender', 'age_group', 'level', 'voice', 'topic', 'mode'
-      // Collect all the selections from your setup buttons
-const selections = {
-  gender: selectedGender,       // Example variable from your UI
-  age_group: selectedAgeGroup,
-  level: selectedLevel,
-  buddyName: selectedBuddyName,
-  topic: selectedTopic,
-  mode: selectedMode
+/* --- CONFIG --- */
+const PROXY_URL = "https://talkbuddy-proxy.vercel.app/api/talkbuddy";
+
+/* --- GLOBAL STATE --- */
+let selections = {
+  gender: null,
+  age_group: null,
+  level: null,
+  buddyName: null,
+  topic: null,
+  mode: null
 };
 
-// Send this to the parent GPT (Talk Buddy)
-window.parent.postMessage({ action: "startSession", selections }, "*");
+/* --- BUTTON LOGIC --- */
+// Example: each button calls this when clicked
+function selectOption(category, value) {
+  selections[category] = value;
 
-    ];
+  // highlight selected button (simple visual)
+  const buttons = document.querySelectorAll(`.btn-${category}`);
+  buttons.forEach(btn => btn.classList.remove("active"));
+  document.getElementById(`${category}-${value}`).classList.add("active");
 
-    function startSession() {
-      const startScreen = document.getElementById('startScreen');
-      const setupScreen = document.getElementById('setupScreen');
-      startScreen.classList.add('hidden');
-      setupScreen.classList.remove('hidden');
-      setTimeout(() => setupScreen.classList.add('active'), 50);
-      console.log('Session started setup');
-    }
+  // check if all categories are chosen
+  checkCompletion();
+}
 
-    document.querySelectorAll('.category').forEach(category => {
-      const buttons = category.querySelectorAll('button');
-      buttons.forEach(button => {
-        button.addEventListener('click', () => {
-          buttons.forEach(btn => btn.classList.remove('selected'));
-          button.classList.add('selected');
-          selections[category.dataset.category] = button.textContent;
-          checkCompletion();
-        });
-      });
+/* --- CHECK COMPLETION --- */
+function checkCompletion() {
+  const allChosen = Object.values(selections).every(v => v !== null);
+  const talkButton = document.getElementById("letsTalkBtn");
+
+  if (allChosen) {
+    talkButton.disabled = false;
+    talkButton.style.opacity = "1";
+  } else {
+    talkButton.disabled = true;
+    talkButton.style.opacity = "0.6";
+  }
+}
+
+/* --- START SESSION --- */
+document.getElementById("letsTalkBtn").addEventListener("click", () => {
+  // Option 1: notify Talk Buddy GPT (if opened inside GPT)
+  if (window.parent) {
+    window.parent.postMessage({ action: "startSession", selections }, "*");
+  }
+
+  // Option 2: also send first message to your proxy
+  startChat();
+});
+
+/* --- FETCH CALL TO PROXY --- */
+async function startChat() {
+  try {
+    // simple “Buddy is thinking” message
+    appendMessage("system", "⏳ Buddy is getting ready...");
+
+    const response = await fetch(PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [
+          { role: "system", content: "You are Talk Buddy, the English tutor." },
+          { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
+        ]
+      })
     });
 
-    function checkCompletion() {
-      const allSelected = requiredCategories.every(c => selections[c]);
-      const letsTalk = document.getElementById('letsTalk');
-      if (allSelected) {
-        letsTalk.classList.add('active');
-      } else {
-        letsTalk.classList.remove('active');
-      }
-    }
-async function beginChat() {
-  const letsTalk = document.getElementById('letsTalk');
-  if (!letsTalk.classList.contains('active')) return;
-
-  document.getElementById('setupScreen').classList.add('hidden');
-  const sessionControls = document.getElementById('sessionControls');
-  sessionControls.classList.remove('hidden');
-  sessionControls.querySelectorAll('button').forEach(btn => btn.classList.add('active'));
-
-  console.log('Chat begins with settings:', selections);
-
-  // 🧩 Connect to GPT logic
-  try {
-    const response = await fetch(PROXY_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    messages: [
-      { role: "system", content: "You are Talk Buddy, the English tutor." },
-      { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
-    ]
-  })
-});
-
-
     const data = await response.json();
-    const firstMessage = data.choices?.[0]?.message?.content || "Hello! Let's begin!";
-    alert(firstMessage); // Replace with voice output later
-  } catch (error) {
-    console.error("Error starting chat:", error);
+    const reply = data.choices[0].message.content;
+    appendMessage("buddy", reply);
+  } catch (err) {
+    appendMessage("system", "⚠️ Error: " + err.message);
   }
 }
-      // TODO: connect to GPT chat logic here
-    }
 
-async function changeTopic() {
-  console.log('Change topic clicked');
-  try {
-    const response = await fetchfetch(PROXY_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    messages: [
-      { role: "system", content: "You are Talk Buddy, the English tutor." },
-      { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
-    ]
-  })
-});
-
-    const data = await response.json();
-    alert(data.choices[0].message.content);
-  } catch (error) {
-    console.error(error);
-  }
+/* --- SIMPLE CHAT DISPLAY --- */
+function appendMessage(role, text) {
+  const chat = document.getElementById("chat");
+  const p = document.createElement("p");
+  p.className = role;
+  p.innerText = `${role === "buddy" ? "Buddy:" : ""} ${text}`;
+  chat.appendChild(p);
+  chat.scrollTop = chat.scrollHeight;
 }
-      // TODO: connect to GPT topic change
-    }
-
-async function changeMode() {
-  console.log('Change mode clicked');
-  try {
-    const response = await fetchfetch(PROXY_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    messages: [
-      { role: "system", content: "You are Talk Buddy, the English tutor." },
-      { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
-    ]
-  })
-});
-
-    const data = await response.json();
-    alert(data.choices[0].message.content);
-  } catch (error) {
-    console.error(error);
-  }
-}
-      // TODO: connect to GPT mode change
-    }
-
-async function endSession() {
-  console.log('Session ended');
-  try {
-    const response = await fetchfetch(PROXY_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    messages: [
-      { role: "system", content: "You are Talk Buddy, the English tutor." },
-      { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
-    ]
-  })
-});
-
-    const data = await response.json();
-    alert(data.choices[0].message.content);
-    location.reload(); // restart interface
-  } catch (error) {
-    console.error(error);
-  }
-}
-      // TODO: connect to GPT end session logic
-      alert('Session ended. Great work!');
-      location.reload();
-    }
-  </script>
+</script>
 </body>
 </html>
 
