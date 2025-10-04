@@ -125,3 +125,234 @@
     <!-- Setup Screen -->
     <div id="setupScreen" class="screen slide hidden">
       <div id="setupForm">
+        <div class="category" data-category="gender">
+          <div class="category-title">Gender</div>
+          <div class="options">
+            <button>man</button>
+            <button>woman</button>
+          </div>
+        </div>
+
+        <div class="category" data-category="age_group">
+          <div class="category-title">Age Group</div>
+          <div class="options">
+            <button>kid</button>
+            <button>teen</button>
+            <button>adult</button>
+          </div>
+        </div>
+
+        <div class="category" data-category="level">
+          <div class="category-title">Level</div>
+          <div class="options">
+            <button>A1</button>
+            <button>A2</button>
+            <button>B1</button>
+            <button>B2</button>
+            <button>C1</button>
+            <button>C2</button>
+          </div>
+        </div>
+
+        <div class="category" data-category="voice">
+          <div class="category-title">Talk Buddy's name</div>
+          <div class="options">
+            <button data-voice="male">Johnny (male)</button>
+            <button data-voice="female">Jill (female)</button>
+          </div>
+        </div>
+
+        <div class="category" data-category="topic">
+          <div class="category-title">Topic</div>
+          <div class="options">
+            <button>cafe</button><button>travel</button><button>hotel</button>
+            <button>phone</button><button>health</button><button>hobbies</button>
+            <button>films</button><button>shopping</button><button>directions</button>
+            <button>weather</button><button>interview</button><button>school</button>
+            <button>dating</button><button>friends</button><button>presentation</button>
+            <button>sports</button><button>gossip</button><button>finance</button>
+            <button>music</button><button>tech</button>
+          </div>
+        </div>
+
+        <div class="category" data-category="mode">
+          <div class="category-title">Mode</div>
+          <div class="options">
+            <button>Roleplay</button>
+            <button>Question and Answer</button>
+            <button>Shadowing</button>
+            <button>Free Conversation</button>
+          </div>
+        </div>
+
+        <button id="letsTalk" onclick="beginChat()">Let’s talk!</button>
+      </div>
+    </div>
+
+    <!-- Chat Control Buttons -->
+    <div id="sessionControls" class="hidden">
+      <button id="changeTopic" onclick="changeTopic()">Change Topic</button>
+      <button id="changeMode" onclick="changeMode()">Change Mode</button>
+      <button id="endSession" onclick="endSession()">End Session</button>
+    </div>
+  </div>
+
+  <script>
+    const OPENAI_API_KEY = "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";
+
+    const selections = {};
+    const requiredCategories = [
+      'gender', 'age_group', 'level', 'voice', 'topic', 'mode'
+    ];
+
+    function startSession() {
+      const startScreen = document.getElementById('startScreen');
+      const setupScreen = document.getElementById('setupScreen');
+      startScreen.classList.add('hidden');
+      setupScreen.classList.remove('hidden');
+      setTimeout(() => setupScreen.classList.add('active'), 50);
+      console.log('Session started setup');
+    }
+
+    document.querySelectorAll('.category').forEach(category => {
+      const buttons = category.querySelectorAll('button');
+      buttons.forEach(button => {
+        button.addEventListener('click', () => {
+          buttons.forEach(btn => btn.classList.remove('selected'));
+          button.classList.add('selected');
+          selections[category.dataset.category] = button.textContent;
+          checkCompletion();
+        });
+      });
+    });
+
+    function checkCompletion() {
+      const allSelected = requiredCategories.every(c => selections[c]);
+      const letsTalk = document.getElementById('letsTalk');
+      if (allSelected) {
+        letsTalk.classList.add('active');
+      } else {
+        letsTalk.classList.remove('active');
+      }
+    }
+async function beginChat() {
+  const letsTalk = document.getElementById('letsTalk');
+  if (!letsTalk.classList.contains('active')) return;
+
+  document.getElementById('setupScreen').classList.add('hidden');
+  const sessionControls = document.getElementById('sessionControls');
+  sessionControls.classList.remove('hidden');
+  sessionControls.querySelectorAll('button').forEach(btn => btn.classList.add('active'));
+
+  console.log('Chat begins with settings:', selections);
+
+  // 🧩 Connect to GPT logic
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-5", // or whichever model you're using
+        messages: [
+          { role: "system", content: "You are Talk Buddy, the English tutor." },
+          { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
+        ]
+      })
+    });
+
+    const data = await response.json();
+    const firstMessage = data.choices?.[0]?.message?.content || "Hello! Let's begin!";
+    alert(firstMessage); // Replace with voice output later
+  } catch (error) {
+    console.error("Error starting chat:", error);
+  }
+}
+      // TODO: connect to GPT chat logic here
+    }
+
+async function changeTopic() {
+  console.log('Change topic clicked');
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-5",
+        messages: [
+          { role: "system", content: "You are Talk Buddy, the English tutor." },
+          { role: "user", content: "Change topic, please." }
+        ]
+      })
+    });
+    const data = await response.json();
+    alert(data.choices[0].message.content);
+  } catch (error) {
+    console.error(error);
+  }
+}
+      // TODO: connect to GPT topic change
+    }
+
+async function changeMode() {
+  console.log('Change mode clicked');
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-5",
+        messages: [
+          { role: "system", content: "You are Talk Buddy, the English tutor." },
+          { role: "user", content: "Change mode, please." }
+        ]
+      })
+    });
+    const data = await response.json();
+    alert(data.choices[0].message.content);
+  } catch (error) {
+    console.error(error);
+  }
+}
+      // TODO: connect to GPT mode change
+    }
+
+async function endSession() {
+  console.log('Session ended');
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-5",
+        messages: [
+          { role: "system", content: "You are Talk Buddy, the English tutor." },
+          { role: "user", content: "End the session and give a short feedback summary." }
+        ]
+      })
+    });
+    const data = await response.json();
+    alert(data.choices[0].message.content);
+    location.reload(); // restart interface
+  } catch (error) {
+    console.error(error);
+  }
+}
+      // TODO: connect to GPT end session logic
+      alert('Session ended. Great work!');
+      location.reload();
+    }
+  </script>
+</body>
+</html>
