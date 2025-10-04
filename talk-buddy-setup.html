@@ -197,7 +197,7 @@
     </div>
   </div>
 
-  <script>
+<script>
 /* --- CONFIG --- */
 const PROXY_URL = "https://talk-buddy-proxy.vercel.app/api/talk-buddy";
 
@@ -212,16 +212,17 @@ let selections = {
 };
 
 /* --- BUTTON LOGIC --- */
-// Example: each button calls this when clicked
+// Called by each setup button (e.g., onclick="selectOption('gender','female')")
 function selectOption(category, value) {
   selections[category] = value;
 
-  // highlight selected button (simple visual)
+  // Highlight selected button visually
   const buttons = document.querySelectorAll(`.btn-${category}`);
   buttons.forEach(btn => btn.classList.remove("active"));
-  document.getElementById(`${category}-${value}`).classList.add("active");
+  const targetBtn = document.getElementById(`${category}-${value}`);
+  if (targetBtn) targetBtn.classList.add("active");
 
-  // check if all categories are chosen
+  // Check if setup is complete
   checkCompletion();
 }
 
@@ -230,30 +231,44 @@ function checkCompletion() {
   const allChosen = Object.values(selections).every(v => v !== null);
   const talkButton = document.getElementById("letsTalkBtn");
 
-  if (allChosen) {
-    talkButton.disabled = false;
-    talkButton.style.opacity = "1";
-  } else {
-    talkButton.disabled = true;
-    talkButton.style.opacity = "0.6";
+  if (talkButton) {
+    talkButton.disabled = !allChosen;
+    talkButton.style.opacity = allChosen ? "1" : "0.6";
   }
 }
 
 /* --- START SESSION --- */
-document.getElementById("letsTalkBtn").addEventListener("click", () => {
-  // Option 1: notify Talk Buddy GPT (if opened inside GPT)
-  if (window.parent) {
-    window.parent.postMessage({ action: "startSession", selections }, "*");
+document.addEventListener("DOMContentLoaded", () => {
+  const talkButton = document.getElementById("letsTalkBtn");
+
+  if (!talkButton) {
+    console.error("❌ Button #letsTalkBtn not found in HTML.");
+    return;
   }
 
-  // Option 2: also send first message to your proxy
-  startChat();
+  talkButton.addEventListener("click", () => {
+    console.log("✅ Let's Talk button clicked. Sending startSession message...");
+
+    // 1️⃣ Notify Talk Buddy GPT (when loaded inside GPT webview)
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ action: "startSession", selections }, "*");
+        console.log("📨 startSession message sent to Talk Buddy:", selections);
+      } else {
+        console.log("⚠️ Not inside Talk Buddy — running standalone mode.");
+      }
+    } catch (err) {
+      console.error("🚨 postMessage error:", err);
+    }
+
+    // 2️⃣ Start your chat fetch call through the secure proxy
+    startChat();
+  });
 });
 
 /* --- FETCH CALL TO PROXY --- */
 async function startChat() {
   try {
-    // simple “Buddy is thinking” message
     appendMessage("system", "⏳ Buddy is getting ready...");
 
     const response = await fetch(PROXY_URL, {
@@ -268,16 +283,25 @@ async function startChat() {
     });
 
     const data = await response.json();
-    const reply = data.choices[0].message.content;
+
+    if (data.error) {
+      appendMessage("system", `⚠️ Proxy Error: ${data.error}`);
+      console.error("Proxy error:", data);
+      return;
+    }
+
+    const reply = data.choices?.[0]?.message?.content || "(No reply)";
     appendMessage("buddy", reply);
   } catch (err) {
-    appendMessage("system", "⚠️ Error: " + err.message);
+    appendMessage("system", "⚠️ Network error: " + err.message);
+    console.error("Network error:", err);
   }
 }
 
 /* --- SIMPLE CHAT DISPLAY --- */
 function appendMessage(role, text) {
   const chat = document.getElementById("chat");
+  if (!chat) return;
   const p = document.createElement("p");
   p.className = role;
   p.innerText = `${role === "buddy" ? "Buddy:" : ""} ${text}`;
@@ -287,6 +311,7 @@ function appendMessage(role, text) {
 </script>
 </body>
 </html>
+
 
 
 
