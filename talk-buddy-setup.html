@@ -198,8 +198,7 @@
   </div>
 
   <script>
-    const OPENAI_API_KEY = "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";
-
+    const PROXY_URL = "https://talkbuddy-proxy.vercel.app/api/talkbuddy";
     const selections = {};
     const requiredCategories = [
       'gender', 'age_group', 'level', 'voice', 'topic', 'mode'
@@ -248,20 +247,17 @@ async function beginChat() {
 
   // 🧩 Connect to GPT logic
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-5", // or whichever model you're using
-        messages: [
-          { role: "system", content: "You are Talk Buddy, the English tutor." },
-          { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
-        ]
-      })
-    });
+    const response = await fetch(PROXY_URL, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    messages: [
+      { role: "system", content: "You are Talk Buddy, the English tutor." },
+      { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
+    ]
+  })
+});
+
 
     const data = await response.json();
     const firstMessage = data.choices?.[0]?.message?.content || "Hello! Let's begin!";
@@ -276,20 +272,17 @@ async function beginChat() {
 async function changeTopic() {
   console.log('Change topic clicked');
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-5",
-        messages: [
-          { role: "system", content: "You are Talk Buddy, the English tutor." },
-          { role: "user", content: "Change topic, please." }
-        ]
-      })
-    });
+    const response = await fetchfetch(PROXY_URL, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    messages: [
+      { role: "system", content: "You are Talk Buddy, the English tutor." },
+      { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
+    ]
+  })
+});
+
     const data = await response.json();
     alert(data.choices[0].message.content);
   } catch (error) {
@@ -302,20 +295,17 @@ async function changeTopic() {
 async function changeMode() {
   console.log('Change mode clicked');
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-5",
-        messages: [
-          { role: "system", content: "You are Talk Buddy, the English tutor." },
-          { role: "user", content: "Change mode, please." }
-        ]
-      })
-    });
+    const response = await fetchfetch(PROXY_URL, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    messages: [
+      { role: "system", content: "You are Talk Buddy, the English tutor." },
+      { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
+    ]
+  })
+});
+
     const data = await response.json();
     alert(data.choices[0].message.content);
   } catch (error) {
@@ -328,20 +318,17 @@ async function changeMode() {
 async function endSession() {
   console.log('Session ended');
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-5",
-        messages: [
-          { role: "system", content: "You are Talk Buddy, the English tutor." },
-          { role: "user", content: "End the session and give a short feedback summary." }
-        ]
-      })
-    });
+    const response = await fetchfetch(PROXY_URL, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    messages: [
+      { role: "system", content: "You are Talk Buddy, the English tutor." },
+      { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
+    ]
+  })
+});
+
     const data = await response.json();
     alert(data.choices[0].message.content);
     location.reload(); // restart interface
@@ -356,3 +343,4 @@ async function endSession() {
   </script>
 </body>
 </html>
+
