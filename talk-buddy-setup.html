@@ -198,10 +198,8 @@
   </div>
 
 <script>
-/* --- CONFIG --- */
 const PROXY_URL = "https://talk-buddy-proxy.vercel.app/api/talkbuddy";
 
-/* --- GLOBAL STATE --- */
 let selections = {
   gender: null,
   age_group: null,
@@ -211,7 +209,6 @@ let selections = {
   mode: null
 };
 
-/* --- BUTTON LOGIC --- */
 function selectOption(category, value) {
   selections[category] = value;
 
@@ -223,50 +220,31 @@ function selectOption(category, value) {
   checkCompletion();
 }
 
-/* --- CHECK COMPLETION --- */
 function checkCompletion() {
   const allChosen = Object.values(selections).every(v => v !== null);
   const talkButton = document.getElementById("letsTalkBtn");
-
   if (talkButton) {
     talkButton.disabled = !allChosen;
     talkButton.style.opacity = allChosen ? "1" : "0.6";
   }
 }
 
-/* --- START SESSION --- */
 document.addEventListener("DOMContentLoaded", () => {
   const talkButton = document.getElementById("letsTalkBtn");
-  if (!talkButton) {
-    console.error("❌ Button #letsTalkBtn not found.");
-    return;
-  }
+  if (!talkButton) return;
 
   talkButton.addEventListener("click", () => {
-    console.log("✅ Let's Talk button clicked");
-
-    // Hide setup, show chat
     document.getElementById("setup").style.display = "none";
     document.getElementById("chat").style.display = "block";
 
-    // Post to parent frame
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ action: "startSession", selections }, "*");
-        console.log("📨 startSession sent:", selections);
-      } else {
-        console.log("⚠️ Running standalone — no parent frame.");
-      }
-    } catch (err) {
-      console.error("🚨 postMessage error:", err);
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ action: "startSession", selections }, "*");
     }
 
-    // Start chat
     startChat();
   });
 });
 
-/* --- FETCH TO PROXY --- */
 async function startChat() {
   appendMessage("system", "⏳ Buddy is getting ready...");
 
@@ -286,7 +264,6 @@ async function startChat() {
 
     if (data.error) {
       appendMessage("system", `⚠️ Proxy Error: ${data.error}`);
-      console.error("Proxy error:", data);
       return;
     }
 
@@ -294,11 +271,9 @@ async function startChat() {
     appendMessage("buddy", reply);
   } catch (err) {
     appendMessage("system", "⚠️ Network error: " + err.message);
-    console.error("Network error:", err);
   }
 }
 
-/* --- DISPLAY CHAT MESSAGES --- */
 function appendMessage(role, text) {
   const chat = document.getElementById("chat");
   if (!chat) return;
@@ -309,21 +284,19 @@ function appendMessage(role, text) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-/* --- LISTEN FOR startSession FROM PARENT --- */
 window.addEventListener("message", (event) => {
   const msg = event.data;
   if (msg?.action === "startSession" && msg.selections) {
     selections = msg.selections;
-
     document.getElementById("setup").style.display = "none";
     document.getElementById("chat").style.display = "block";
-
     startChat();
   }
 });
 </script>
 </body>
 </html>
+
 
 
 
