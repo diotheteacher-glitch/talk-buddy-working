@@ -198,104 +198,71 @@
   </div>
 
 <script>
-const PROXY_URL = "https://talk-buddy-proxy.vercel.app/api/talkbuddy";
-
-let selections = {
+const selections = {
   gender: null,
   age_group: null,
   level: null,
-  buddyName: null,
+  voice: null,
   topic: null,
   mode: null
 };
 
-function selectOption(category, value) {
+function selectOption(category, value, button) {
   selections[category] = value;
 
-  const buttons = document.querySelectorAll(`.btn-${category}`);
-  buttons.forEach(btn => btn.classList.remove("active"));
-  const targetBtn = document.getElementById(`${category}-${value}`);
-  if (targetBtn) targetBtn.classList.add("active");
+  const buttons = button.parentElement.querySelectorAll("button");
+  buttons.forEach(btn => btn.classList.remove("selected"));
+  button.classList.add("selected");
 
-  checkCompletion();
+  validateForm();
 }
 
-function checkCompletion() {
-  const allChosen = Object.values(selections).every(v => v !== null);
-  const talkButton = document.getElementById("letsTalkBtn");
-  if (talkButton) {
-    talkButton.disabled = !allChosen;
-    talkButton.style.opacity = allChosen ? "1" : "0.6";
+function validateForm() {
+  const allSelected = Object.values(selections).every(v => v !== null);
+  const talkButton = document.getElementById("letsTalk");
+  if (allSelected) {
+    talkButton.classList.add("active");
+  } else {
+    talkButton.classList.remove("active");
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const talkButton = document.getElementById("letsTalkBtn");
-  if (!talkButton) return;
+function startSession() {
+  document.getElementById("startScreen").classList.add("hidden");
+  document.getElementById("setupScreen").classList.remove("hidden");
+  document.getElementById("setupScreen").classList.add("active");
+}
 
-  talkButton.addEventListener("click", () => {
-    document.getElementById("setup").style.display = "none";
-    document.getElementById("chat").style.display = "block";
+function beginChat() {
+  if (!document.getElementById("letsTalk").classList.contains("active")) return;
 
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ action: "startSession", selections }, "*");
+  // Send startSession to parent (ChatGPT WebView)
+  if (window.parent !== window) {
+    window.parent.postMessage({ action: "startSession", selections }, "*");
+  }
+
+  // Show session controls
+  document.getElementById("sessionControls").classList.remove("hidden");
+}
+
+// Attach event listeners
+document.querySelectorAll(".category .options button").forEach(button => {
+  button.addEventListener("click", () => {
+    const categoryDiv = button.closest(".category");
+    const category = categoryDiv.getAttribute("data-category");
+
+    let value = button.textContent.trim();
+    if (category === "voice") {
+      value = button.getAttribute("data-voice") === "male" ? "johnny" : "jill";
     }
 
-    startChat();
+    selectOption(category, value, button);
   });
-});
-
-async function startChat() {
-  appendMessage("system", "⏳ Buddy is getting ready...");
-
-  try {
-    const response = await fetch(PROXY_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [
-          { role: "system", content: "You are Talk Buddy, the English tutor." },
-          { role: "user", content: `Start session with ${JSON.stringify(selections)}` }
-        ]
-      })
-    });
-
-    const data = await response.json();
-
-    if (data.error) {
-      appendMessage("system", `⚠️ Proxy Error: ${data.error}`);
-      return;
-    }
-
-    const reply = data.choices?.[0]?.message?.content || "(No reply)";
-    appendMessage("buddy", reply);
-  } catch (err) {
-    appendMessage("system", "⚠️ Network error: " + err.message);
-  }
-}
-
-function appendMessage(role, text) {
-  const chat = document.getElementById("chat");
-  if (!chat) return;
-  const p = document.createElement("p");
-  p.className = role;
-  p.innerText = `${role === "buddy" ? "Buddy:" : ""} ${text}`;
-  chat.appendChild(p);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-window.addEventListener("message", (event) => {
-  const msg = event.data;
-  if (msg?.action === "startSession" && msg.selections) {
-    selections = msg.selections;
-    document.getElementById("setup").style.display = "none";
-    document.getElementById("chat").style.display = "block";
-    startChat();
-  }
 });
 </script>
 </body>
 </html>
+
 
 
 
