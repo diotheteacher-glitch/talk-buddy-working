@@ -199,7 +199,7 @@
 
 <script>
 /* --- CONFIG --- */
-const PROXY_URL = "https://talk-buddy-proxy.vercel.app/api/talk-buddy";
+const PROXY_URL = "https://talk-buddy-proxy.vercel.app/api/talkbuddy";
 
 /* --- GLOBAL STATE --- */
 let selections = {
@@ -212,17 +212,14 @@ let selections = {
 };
 
 /* --- BUTTON LOGIC --- */
-// Called by each setup button (e.g., onclick="selectOption('gender','female')")
 function selectOption(category, value) {
   selections[category] = value;
 
-  // Highlight selected button visually
   const buttons = document.querySelectorAll(`.btn-${category}`);
   buttons.forEach(btn => btn.classList.remove("active"));
   const targetBtn = document.getElementById(`${category}-${value}`);
   if (targetBtn) targetBtn.classList.add("active");
 
-  // Check if setup is complete
   checkCompletion();
 }
 
@@ -240,37 +237,40 @@ function checkCompletion() {
 /* --- START SESSION --- */
 document.addEventListener("DOMContentLoaded", () => {
   const talkButton = document.getElementById("letsTalkBtn");
-
   if (!talkButton) {
-    console.error("❌ Button #letsTalkBtn not found in HTML.");
+    console.error("❌ Button #letsTalkBtn not found.");
     return;
   }
 
   talkButton.addEventListener("click", () => {
-    console.log("✅ Let's Talk button clicked. Sending startSession message...");
+    console.log("✅ Let's Talk button clicked");
 
-    // 1️⃣ Notify Talk Buddy GPT (when loaded inside GPT webview)
+    // Hide setup, show chat
+    document.getElementById("setup").style.display = "none";
+    document.getElementById("chat").style.display = "block";
+
+    // Post to parent frame
     try {
       if (window.parent && window.parent !== window) {
         window.parent.postMessage({ action: "startSession", selections }, "*");
-        console.log("📨 startSession message sent to Talk Buddy:", selections);
+        console.log("📨 startSession sent:", selections);
       } else {
-        console.log("⚠️ Not inside Talk Buddy — running standalone mode.");
+        console.log("⚠️ Running standalone — no parent frame.");
       }
     } catch (err) {
       console.error("🚨 postMessage error:", err);
     }
 
-    // 2️⃣ Start your chat fetch call through the secure proxy
+    // Start chat
     startChat();
   });
 });
 
-/* --- FETCH CALL TO PROXY --- */
+/* --- FETCH TO PROXY --- */
 async function startChat() {
-  try {
-    appendMessage("system", "⏳ Buddy is getting ready...");
+  appendMessage("system", "⏳ Buddy is getting ready...");
 
+  try {
     const response = await fetch(PROXY_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -298,7 +298,7 @@ async function startChat() {
   }
 }
 
-/* --- SIMPLE CHAT DISPLAY --- */
+/* --- DISPLAY CHAT MESSAGES --- */
 function appendMessage(role, text) {
   const chat = document.getElementById("chat");
   if (!chat) return;
@@ -308,9 +308,23 @@ function appendMessage(role, text) {
   chat.appendChild(p);
   chat.scrollTop = chat.scrollHeight;
 }
+
+/* --- LISTEN FOR startSession FROM PARENT --- */
+window.addEventListener("message", (event) => {
+  const msg = event.data;
+  if (msg?.action === "startSession" && msg.selections) {
+    selections = msg.selections;
+
+    document.getElementById("setup").style.display = "none";
+    document.getElementById("chat").style.display = "block";
+
+    startChat();
+  }
+});
 </script>
 </body>
 </html>
+
 
 
 
